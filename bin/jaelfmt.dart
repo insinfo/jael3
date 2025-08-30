@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:args/args.dart';
-import 'package:jael3/jael3.dart';
+import 'package:jael3_fork/jael3.dart';
 
 var argParser = ArgParser()
   ..addOption('line-length',

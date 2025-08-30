@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:charcode/charcode.dart';
 import 'package:belatuk_code_buffer/belatuk_code_buffer.dart';
-import 'package:jael3/jael3.dart' as jael;
+import 'package:jael3_fork/jael3.dart' as jael;
 import 'package:belatuk_symbol_table/belatuk_symbol_table.dart';
 
 void main() {

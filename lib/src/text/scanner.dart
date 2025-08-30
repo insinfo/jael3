@@ -21,15 +21,10 @@ abstract class Scanner {
   List<Token> get tokens;
 }
 
-final RegExp _htmlComment = RegExp(r'<!--[^$]*-->');
-
 final Map<Pattern, TokenType> _expressionPatterns = {
 //final Map<Pattern, TokenType> _htmlPatterns = {
   '{{': TokenType.lDoubleCurly,
   '{{-': TokenType.lDoubleCurly,
-
-  //
-  _htmlComment: TokenType.htmlComment,
   '!DOCTYPE': TokenType.doctype,
   '!doctype': TokenType.doctype,
   '<': TokenType.lt,
@@ -101,72 +96,87 @@ class _Scanner implements Scanner {
       if (state == _ScannerState.html) {
         scanHtml(asDSX);
       } else if (state == _ScannerState.freeText) {
-        // Just keep parsing until we hit "</"
+        // Consome até aparecer {{ (ou { em DSX) ou até o fechamento real da tag atual (ex: </script>)
         var start = _scanner.state, end = start;
 
         while (!_scanner.isDone) {
-          // Skip through comments
-          if (_scanner.scan(_htmlComment)) continue;
+          // 1) Comentários HTML em freeText: ignorar completamente
+          if (_scanner.matches('<!--')) {
+            final commentStart = _scanner.state;
+            _scanner.scan('<!--');
+            var closed = false;
+            while (!_scanner.isDone) {
+              if (_scanner.matches('-->')) {
+                _scanner.scan('-->');
+                closed = true;
+                break;
+              }
+              _scanner.readChar();
+            }
+            if (!closed) {
+              errors.add(JaelError(
+                JaelErrorSeverity.error,
+                'Unterminated HTML comment.',
+                _scanner.spanFrom(commentStart, _scanner.state),
+              ));
+            }
+            continue;
+          }
 
-          // Break on {{ or {
+          // 2) Interpolação: volta ao HTML para o parser lidar
           if (_scanner.matches(asDSX ? '{' : '{{')) {
             state = _ScannerState.html;
-            //_scanner.position--;
             break;
           }
 
+          // 3) Olhar por '<'
           var ch = _scanner.readChar();
-
           if (ch == $lt) {
-            // && !_scanner.isDone) {
+            final inScript = openTags.isNotEmpty &&
+                (openTags.first?.toLowerCase() == 'script');
+
+            // 3a) Se for um fechamento: </...>
             if (_scanner.matches('/')) {
-              // If we reached "</", backtrack and break into HTML
-              openTags.removeFirst();
-              _scanner.position--;
-              state = _ScannerState.html;
-              break;
-            } else if (_scanner.matches(_id)) {
-              // Also break when we reach <foo.
-              //
-              // HOWEVER, that is also JavaScript. So we must
-              // only break in this case when the current tag is NOT "script".
-              var shouldBreak =
-                  (openTags.isEmpty || openTags.first != 'script');
+              final afterLt = _scanner.state; // pos após "<"
+              _scanner.readChar(); // consome '/'
+              _scanner.scan(_whitespace);
+              var shouldBreak = false;
 
-              if (!shouldBreak) {
-                // Try to see if we are closing a script tag
-                var replay = _scanner.state;
-                _scanner
-                  ..readChar()
-                  ..scan(_whitespace);
-                //print(_scanner.emptySpan.highlight());
-
-                if (_scanner.matches(_id)) {
-                  //print(_scanner.lastMatch[0]);
-                  shouldBreak = _scanner.lastMatch?[0] == 'script';
-                  _scanner.position--;
-                }
-
-                if (!shouldBreak) {
-                  _scanner.state = replay;
+              if (_scanner.matches(_id)) {
+                  final tagName = _scanner.lastMatch![0]!.toLowerCase();
+                // Só quebra se a tag de fechamento for a mesma que abriu o modo freeText
+                if (openTags.isNotEmpty &&
+                    tagName == openTags.first?.toLowerCase()) {
+                  shouldBreak = true;
                 }
               }
 
+              _scanner.state = afterLt; // volta para posição logo após "<"
+
               if (shouldBreak) {
-                openTags.removeFirst();
+                _scanner.position--; // devolve o '<' para o modo HTML
+                state = _ScannerState.html;
+                break;
+              }
+              // Se não for a tag de fechamento correta, continua tratando como texto.
+            }
+            // 3b) Se for abertura "<foo": só volta ao HTML se NÃO estivermos dentro de <script> ou <style>
+            else if (_scanner.matches(_id)) {
+              if (!inScript) {
+                // Adicionar outras tags como 'style' se necessário
+                // devolver o '<' para o modo HTML tokenizar a tag
                 _scanner.position--;
                 state = _ScannerState.html;
                 break;
               }
+              // se estamos em script, "<div" etc. é tratado como texto.
             }
           }
 
-          // Otherwise, just add to the "buffer"
           end = _scanner.state;
         }
 
         var span = _scanner.spanFrom(start, end);
-
         if (span.text.isNotEmpty == true) {
           tokens.add(Token(TokenType.text, span, null));
         }
@@ -178,97 +188,119 @@ class _Scanner implements Scanner {
     var brackets = Queue<Token>();
 
     do {
-      // Only continue if we find a left bracket
-      if (true) {
-        // || _scanner.matches('<') || _scanner.matches('{{')) {
-        var potential = <Token>[];
+      var potential = <Token>[];
 
-        while (true) {
-          // Scan whitespace
-          _scanner.scan(_whitespace);
+      while (true) {
+        _scanner.scan(_whitespace);
 
-          _expressionPatterns.forEach((pattern, type) {
-            if (_scanner.matches(pattern)) {
-              if (_scanner.lastSpan != null) {
-                potential
-                    .add(Token(type, _scanner.lastSpan!, _scanner.lastMatch));
-              } else {
-                // TODO: To be relooked
-              }
+        // Comentários HTML no modo HTML: emite token
+        if (_scanner.matches('<!--')) {
+          final start = _scanner.state;
+          _scanner.scan('<!--');
+          var closed = false;
+          while (!_scanner.isDone) {
+            if (_scanner.matches('-->')) {
+              _scanner.scan('-->');
+              closed = true;
+              break;
             }
-          });
+            _scanner.readChar();
+          }
+          final span = _scanner.spanFrom(start, _scanner.state);
+          if (!closed) {
+            errors.add(JaelError(
+                JaelErrorSeverity.error, 'Unterminated HTML comment.', span));
+          } else {
+            tokens.add(Token(TokenType.htmlComment, span, null));
+          }
+          continue;
+        }
 
-          potential.sort((a, b) => b.span.length.compareTo(a.span.length));
+        // Varredura normal
+        _expressionPatterns.forEach((pattern, type) {
+          if (_scanner.matches(pattern)) {
+            if (_scanner.lastSpan != null) {
+              potential
+                  .add(Token(type, _scanner.lastSpan!, _scanner.lastMatch));
+            }
+          }
+        });
 
-          if (potential.isEmpty) break;
+        potential.sort((a, b) => b.span.length.compareTo(a.span.length));
+        if (potential.isEmpty) break;
 
-          var token = potential.first;
-          tokens.add(token);
+        var token = potential.first;
+        tokens.add(token);
+        _scanner.scan(token.span.text);
 
-          _scanner.scan(token.span.text);
+        if (token.type == TokenType.lt) {
+          brackets.addFirst(token);
 
-          if (token.type == TokenType.lt) {
-            brackets.addFirst(token);
+          // Captura nome da tag para controlar contexto (script)
+          var replay = _scanner.state;
+          _scanner.scan(_whitespace);
+          if (_scanner.matches(_id)) {
+            openTags.addFirst(_scanner.lastMatch![0]!.toLowerCase());
+          } else {
+            _scanner.state = replay;
+          }
+        } else if (token.type == TokenType.slash) {
+          // "</"
+          if (brackets.isNotEmpty && brackets.first.type == TokenType.lt) {
+            brackets
+              ..removeFirst()
+              ..addFirst(token);
+          }
+        } else if (token.type == TokenType.gt) {
+          // Fechou ">"
+          if (brackets.isNotEmpty && brackets.first.type == TokenType.slash) {
+            // Terminou "</...>"
+            brackets.removeFirst();
+            if (openTags.isNotEmpty) openTags.removeFirst();
 
-            // Try to see if we are at a tag.
+            var replay = _scanner.state;
+            _scanner.scan(_whitespace);
+            if (!_scanner.matches('<') && !_scanner.matches('{{')) {
+              _scanner.state = replay;
+              state = _ScannerState.freeText;
+              break;
+            }
+          } else if (brackets.isNotEmpty &&
+              brackets.first.type == TokenType.lt) {
+            // Terminou "<...>"
+            brackets.removeFirst();
+
+            final tagName = openTags.isNotEmpty ? openTags.first : '';
+
             var replay = _scanner.state;
             _scanner.scan(_whitespace);
 
-            if (_scanner.matches(_id)) {
-              openTags.addFirst(_scanner.lastMatch![0]);
-            } else {
+            // Entra em modo freeText para tags especiais como <script> e <style>
+            if (tagName == 'script' || tagName == 'style') {
+              if (!_scanner.matches('</')) {
+                _scanner.state = replay;
+                state = _ScannerState.freeText;
+                break;
+              }
+            } else if (!_scanner.matches('<') && !_scanner.matches('{{')) {
               _scanner.state = replay;
+              state = _ScannerState.freeText;
+              break;
             }
-          } else if (token.type == TokenType.slash) {
-            // Only push if we're at </foo
-            if (brackets.isNotEmpty && brackets.first.type == TokenType.lt) {
-              brackets
-                ..removeFirst()
-                ..addFirst(token);
-            }
-          } else if (token.type == TokenType.gt) {
-            // Only pop the bracket if we're at foo>, </foo> or foo/>
-            if (brackets.isNotEmpty && brackets.first.type == TokenType.slash) {
-              // </foo>
-              brackets.removeFirst();
-
-              // Now, ONLY continue parsing HTML if the next character is '<'.
-              var replay = _scanner.state;
-              _scanner.scan(_whitespace);
-
-              if (!_scanner.matches('<')) {
-                _scanner.state = replay;
-                state = _ScannerState.freeText;
-                break;
-              }
-            }
-            //else if (_scanner.matches('>')) brackets.removeFirst();
-            else if (brackets.isNotEmpty &&
-                brackets.first.type == TokenType.lt) {
-              // We're at foo>, try to parse text?
-              brackets.removeFirst();
-
-              var replay = _scanner.state;
-              _scanner.scan(_whitespace);
-
-              if (!_scanner.matches('<')) {
-                _scanner.state = replay;
-                state = _ScannerState.freeText;
-                break;
-              }
-            }
-          } else if (token.type ==
-              (asDSX ? TokenType.rCurly : TokenType.rDoubleCurly)) {
-            state = _ScannerState.freeText;
-            break;
           }
-
-          potential.clear();
+        } else if (token.type ==
+            (asDSX ? TokenType.rCurly : TokenType.rDoubleCurly)) {
+          state = _ScannerState.freeText;
+          break;
         }
+
+        potential.clear();
       }
     } while (brackets.isNotEmpty && !_scanner.isDone);
 
-    state = _ScannerState.freeText;
+    if (brackets.isEmpty) {
+      state = _ScannerState.freeText;
+    }
   }
 }
 

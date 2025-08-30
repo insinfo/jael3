@@ -1,4 +1,4 @@
-import 'package:jael3/jael3.dart';
+import 'package:jael3_fork/jael3.dart';
 import 'package:belatuk_symbol_table/belatuk_symbol_table.dart';
 import 'package:test/test.dart';
 

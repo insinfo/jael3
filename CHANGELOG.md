@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.3.0
+
+- Fix HTML comment handling in both the scanner and the parser:
+  - Correctly tokenizes `<!-- ... -->`
+  - Ensures comment contents are ignored (no longer leaked as text nodes)
+  - Prevents delimiters from being emitted as literal text
+  - Detects/guards against unterminated comments
+- No public API changes; behavior is now spec-compliant and backwards compatible.
+- incorporated jael3_preprocessor on package
+
 ## 8.2.0
 
 * Require Dart >= 3.3

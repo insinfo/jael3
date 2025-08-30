@@ -1,5 +1,7 @@
 # Jael 3
 
+fork to fix bugs
+
 ![Pub Version (including pre-releases)](https://img.shields.io/pub/v/jael3?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![Gitter](https://img.shields.io/gitter/room/angel_dart/discussion)](https://gitter.im/angel_dart/discussion)
@@ -15,7 +17,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  jael3: ^8.0.0
+  jael3: ^8.2.0
 ```
 
 ## API

@@ -47,23 +47,50 @@ class Parser {
   }
 
   Document? parseDocument() {
+    // Pula comentários e textos só-whitespace antes do DOCTYPE/raiz
+    _skipPreamble();
+
     var doctype = parseDoctype();
 
-    if (doctype == null) {
-      var root = parseElement();
-      if (root == null) return null;
-      return Document(null, root);
-    }
+    // Pula comentários/whitespace entre DOCTYPE e a raiz
+    _skipPreamble();
 
     var root = parseElement();
 
     if (root == null) {
-      errors.add(JaelError(JaelErrorSeverity.error,
-          'Missing root element after !DOCTYPE declaration.', doctype.span));
+      // Mantém o comportamento antigo de só reportar se havia DOCTYPE
+      if (doctype != null) {
+        errors.add(JaelError(
+          JaelErrorSeverity.error,
+          'Missing root element after !DOCTYPE declaration.',
+          doctype.span,
+        ));
+      }
       return null;
     }
 
     return Document(doctype, root);
+  }
+
+// Helper: consome htmlComment e text (apenas whitespace)
+  void _skipPreamble() {
+    while (true) {
+      if (next(TokenType.htmlComment)) {
+        // segue consumindo comentários no topo
+        continue;
+      }
+      if (next(TokenType.text)) {
+        // só ignora se for whitespace puro
+        if (_current.span.text.trim().isEmpty) {
+          continue;
+        } else {
+          // texto “real”: volta uma posição para o próximo parser ver
+          _index--;
+          break;
+        }
+      }
+      break;
+    }
   }
 
   StringLiteral? implicitString() {
