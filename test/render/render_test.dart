@@ -336,6 +336,88 @@ void main() {
 
     expect(buf.toString().trim(), 'Weird...');
   });
+
+  group('comments', () {
+    test('ignored at file start and elsewhere', () {
+      const template = '''
+<!-- leading comment -->
+<html>
+  <body>
+    <!-- before h1 -->
+    <h1>Hello</h1>
+    <!-- multi-line
+         block comment -->
+    <p>World</p>
+    <!-- trailing comment -->
+  </body>
+</html>
+''';
+
+      final buf = CodeBuffer();
+      final doc =
+          jael.parseDocument(template, sourceUrl: 'comments_start.jael')!;
+      const jael.Renderer().render(doc, buf, SymbolTable());
+
+      // Não deve vazar delimitadores de comentário
+      expect(buf.toString(), isNot(contains('<!--')));
+      expect(buf.toString(), isNot(contains('-->')));
+
+      // Render esperado (sem comentários)
+      expect(
+        buf.toString(),
+        '''
+<html>
+  <body>
+    <h1>
+      Hello
+    </h1>
+    <p>
+      World
+    </p>
+  </body>
+</html>
+'''
+            .trim(),
+      );
+    });
+
+    test('comments inline comments between siblings', () {
+      const template = '''
+<div>
+  <span>A</span><!-- inline --><span>B</span>
+</div>
+''';
+
+      final buf = CodeBuffer();
+      final doc =
+          jael.parseDocument(template, sourceUrl: 'comments_inline.jael')!;
+      const jael.Renderer().render(doc, buf, SymbolTable());
+
+      final out = buf.toString();
+
+      // 1) Comentários não devem aparecer
+      expect(out, isNot(contains('<!--')));
+      expect(out, isNot(contains('-->')));
+
+      // 2) As duas <span> devem continuar adjacentes (ignorando espaços/linhas)
+      expect(
+        out,
+        matches(RegExp(r'<span>\s*A\s*</span>\s*<span>\s*B\s*</span>',
+            multiLine: true)),
+      );
+    });
+
+    test('unterminated comment throws', () {
+      const bad = '''
+<!-- missing close
+<html><body><h1>Bad</h1></body></html>
+''';
+      expect(
+        () => jael.parseDocument(bad, sourceUrl: 'unterminated_comment.jael'),
+        throwsA(isA<jael.JaelError>()),
+      );
+    });
+  });
 }
 
 const List<_Pokemon> _starters = [

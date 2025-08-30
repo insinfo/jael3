@@ -143,7 +143,7 @@ class _Scanner implements Scanner {
               var shouldBreak = false;
 
               if (_scanner.matches(_id)) {
-                  final tagName = _scanner.lastMatch![0]!.toLowerCase();
+                final tagName = _scanner.lastMatch![0]!.toLowerCase();
                 // Só quebra se a tag de fechamento for a mesma que abriu o modo freeText
                 if (openTags.isNotEmpty &&
                     tagName == openTags.first?.toLowerCase()) {
