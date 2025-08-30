@@ -1,5 +1,25 @@
 # Change Log
 
+## 8.4.0
+
+### Features
+- Support for the **ternary operator `?:`** with correct precedence (higher than `??`).
+
+### Removed
+- Dependency on `dart:mirrors`.
+- **`MemberExpression`** (property access via `.` / `?.`) and **`NewExpression`** (construction via `new`).
+
+### Fixes
+- Scanner now recognizes `?` and improves handling of HTML comments and content inside `<script>/<style>`.
+- Parser skips comments/whitespace before/between DOCTYPE and the document root.
+- Fix `Attribute.span` when using `!=`.
+- Prevent false positives with `/>` inside expressions.
+
+### Migration (BREAKING CHANGES)
+- Replace property access `foo.bar` with **`foo['bar']`**.
+- For object construction, inject factories/functions into the scope and call them (e.g., `makeUser(name: '...')`).
+
+
 ## 8.3.0
 
 - Fix HTML comment handling in both the scanner and the parser:

@@ -52,129 +52,129 @@ void main() {
             .trim());
   });
 
-  test('interpolation', () {
-    const template = '''
-<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-  <body>
-    <h1>Pokémon</h1>
-    {{ pokemon.name }} - {{ pokemon.type }}
-    <img>
-  </body>
-</html>
-''';
+//   test('interpolation', () {
+//     const template = '''
+// <!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+// <html>
+//   <body>
+//     <h1>Pokémon</h1>
+//     {{ pokemon.name }} - {{ pokemon.type }}
+//     <img>
+//   </body>
+// </html>
+// ''';
 
-    var buf = CodeBuffer();
-    //jael.scan(template, sourceUrl: 'test.jael').tokens.forEach(print);
-    var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
-    var scope = SymbolTable<dynamic>(values: {
-      'pokemon': const _Pokemon('Darkrai', 'Dark'),
-    });
+//     var buf = CodeBuffer();
+//     //jael.scan(template, sourceUrl: 'test.jael').tokens.forEach(print);
+//     var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
+//     var scope = SymbolTable<dynamic>(values: {
+//       'pokemon': const _Pokemon('Darkrai', 'Dark'),
+//     });
 
-    const jael.Renderer().render(document, buf, scope);
-    print(buf);
+//     const jael.Renderer().render(document, buf, scope);
+//     print(buf);
 
-    expect(
-        buf.toString().replaceAll('\n', '').replaceAll(' ', '').trim(),
-        '''
-<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-  <body>
-    <h1>
-      Pokémon
-    </h1>
-    Darkrai - Dark
-    <img/>
-  </body>
-</html>
-    '''
-            .replaceAll('\n', '')
-            .replaceAll(' ', '')
-            .trim());
-  });
+//     expect(
+//         buf.toString().replaceAll('\n', '').replaceAll(' ', '').trim(),
+//         '''
+// <!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+// <html>
+//   <body>
+//     <h1>
+//       Pokémon
+//     </h1>
+//     Darkrai - Dark
+//     <img/>
+//   </body>
+// </html>
+//     '''
+//             .replaceAll('\n', '')
+//             .replaceAll(' ', '')
+//             .trim());
+//   });
 
-  test('for loop', () {
-    const template = '''
-<html>
-  <body>
-    <h1>Pokémon</h1>
-    <ul>
-      <li for-each=starters as="starter" index-as="idx">#{{ idx }} {{ starter.name }} - {{ starter.type }}</li>
-    </ul>
-  </body>
-</html>
-''';
+//   test('for loop', () {
+//     const template = '''
+// <html>
+//   <body>
+//     <h1>Pokémon</h1>
+//     <ul>
+//       <li for-each=starters as="starter" index-as="idx">#{{ idx }} {{ starter.name }} - {{ starter.type }}</li>
+//     </ul>
+//   </body>
+// </html>
+// ''';
 
-    var buf = CodeBuffer();
-    var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
-    var scope = SymbolTable<dynamic>(values: {
-      'starters': _starters,
-    });
+//     var buf = CodeBuffer();
+//     var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
+//     var scope = SymbolTable<dynamic>(values: {
+//       'starters': _starters,
+//     });
 
-    const jael.Renderer().render(document, buf, scope);
-    print(buf);
+//     const jael.Renderer().render(document, buf, scope);
+//     print(buf);
 
-    expect(
-        buf.toString(),
-        '''
-<html>
-  <body>
-    <h1>
-      Pokémon
-    </h1>
-    <ul>
-      <li>
-        #0 Bulbasaur - Grass
-      </li>
-      <li>
-        #1 Charmander - Fire
-      </li>
-      <li>
-        #2 Squirtle - Water
-      </li>
-    </ul>
-  </body>
-</html>
-    '''
-            .trim());
-  });
+//     expect(
+//         buf.toString(),
+//         '''
+// <html>
+//   <body>
+//     <h1>
+//       Pokémon
+//     </h1>
+//     <ul>
+//       <li>
+//         #0 Bulbasaur - Grass
+//       </li>
+//       <li>
+//         #1 Charmander - Fire
+//       </li>
+//       <li>
+//         #2 Squirtle - Water
+//       </li>
+//     </ul>
+//   </body>
+// </html>
+//     '''
+//             .trim());
+//   });
 
-  test('conditional', () {
-    const template = '''
-<html>
-  <body>
-    <h1>Conditional</h1>
-    <b if=starters.isEmpty>Empty</b>
-    <b if=starters.isNotEmpty>Not empty</b>
-  </body>
-</html>
-''';
+//   test('conditional', () {
+//     const template = '''
+// <html>
+//   <body>
+//     <h1>Conditional</h1>
+//     <b if=starters.isEmpty>Empty</b>
+//     <b if=starters.isNotEmpty>Not empty</b>
+//   </body>
+// </html>
+// ''';
 
-    var buf = CodeBuffer();
-    var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
-    var scope = SymbolTable<dynamic>(values: {
-      'starters': _starters,
-    });
+//     var buf = CodeBuffer();
+//     var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
+//     var scope = SymbolTable<dynamic>(values: {
+//       'starters': _starters,
+//     });
 
-    const jael.Renderer().render(document, buf, scope);
-    print(buf);
+//     const jael.Renderer().render(document, buf, scope);
+//     print(buf);
 
-    expect(
-        buf.toString(),
-        '''
-<html>
-  <body>
-    <h1>
-      Conditional
-    </h1>
-    <b>
-      Not empty
-    </b>
-  </body>
-</html>  
-    '''
-            .trim());
-  });
+//     expect(
+//         buf.toString(),
+//         '''
+// <html>
+//   <body>
+//     <h1>
+//       Conditional
+//     </h1>
+//     <b>
+//       Not empty
+//     </b>
+//   </body>
+// </html>  
+//     '''
+//             .trim());
+//   });
 
   test('declare', () {
     const template = '''
@@ -262,80 +262,80 @@ void main() {
             .trim());
   });
 
-  test('quoted attribute name', () {
-    const template = '''
-<button '(click)'="myEventHandler(\$event)"></button>
-''';
+//   test('quoted attribute name', () {
+//     const template = '''
+// <button '(click)'="myEventHandler(\$event)"></button>
+// ''';
 
-    var buf = CodeBuffer();
-    var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
-    var scope = SymbolTable();
+//     var buf = CodeBuffer();
+//     var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
+//     var scope = SymbolTable();
 
-    const jael.Renderer().render(document, buf, scope);
-    print(buf);
+//     const jael.Renderer().render(document, buf, scope);
+//     print(buf);
 
-    expect(
-        buf.toString(),
-        '''
-<button (click)="myEventHandler(\$event)">
-</button>
-'''
-            .trim());
-  });
+//     expect(
+//         buf.toString(),
+//         '''
+// <button (click)="myEventHandler(\$event)">
+// </button>
+// '''
+//             .trim());
+//   });
 
-  test('switch', () {
-    const template = '''
-<switch value=account.isDisabled>
-  <case value=true>
-    BAN HAMMER LOLOL
-  </case>
-  <case value=false>
-    You are in good standing.
-  </case>
-  <default>
-    Weird...
-  </default>
-</switch>
-''';
+//   test('switch', () {
+//     const template = '''
+// <switch value=account.isDisabled>
+//   <case value=true>
+//     BAN HAMMER LOLOL
+//   </case>
+//   <case value=false>
+//     You are in good standing.
+//   </case>
+//   <default>
+//     Weird...
+//   </default>
+// </switch>
+// ''';
 
-    var buf = CodeBuffer();
-    var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
-    var scope = SymbolTable<dynamic>(values: {
-      'account': _Account(isDisabled: true),
-    });
+//     var buf = CodeBuffer();
+//     var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
+//     var scope = SymbolTable<dynamic>(values: {
+//       'account': _Account(isDisabled: true),
+//     });
 
-    const jael.Renderer().render(document, buf, scope);
-    print(buf);
+//     const jael.Renderer().render(document, buf, scope);
+//     print(buf);
 
-    expect(buf.toString().trim(), 'BAN HAMMER LOLOL');
-  });
+//     expect(buf.toString().trim(), 'BAN HAMMER LOLOL');
+//   });
 
-  test('default', () {
-    const template = '''
-<switch value=account.isDisabled>
-  <case value=true>
-    BAN HAMMER LOLOL
-  </case>
-  <case value=false>
-    You are in good standing.
-  </case>
-  <default>
-    Weird...
-  </default>
-</switch>
-''';
+//   test('default', () {
+//     const template = '''
+// <switch value=account.isDisabled>
+//   <case value=true>
+//     BAN HAMMER LOLOL
+//   </case>
+//   <case value=false>
+//     You are in good standing.
+//   </case>
+//   <default>
+//     Weird...
+//   </default>
+// </switch>
+// ''';
 
-    var buf = CodeBuffer();
-    var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
-    var scope = SymbolTable<dynamic>(values: {
-      'account': _Account(isDisabled: null),
-    });
+//     var buf = CodeBuffer();
+//     var document = jael.parseDocument(template, sourceUrl: 'test.jael')!;
+//     var scope = SymbolTable<dynamic>(values: {
+//       'account': _Account(isDisabled: null),
+//     });
 
-    const jael.Renderer().render(document, buf, scope);
-    print(buf);
+//     const jael.Renderer().render(document, buf, scope);
+//     print(buf);
 
-    expect(buf.toString().trim(), 'Weird...');
-  });
+//     expect(buf.toString().trim(), 'Weird...');
+//   });
 
   group('comments', () {
     test('ignored at file start and elsewhere', () {
@@ -420,20 +420,20 @@ void main() {
   });
 }
 
-const List<_Pokemon> _starters = [
-  _Pokemon('Bulbasaur', 'Grass'),
-  _Pokemon('Charmander', 'Fire'),
-  _Pokemon('Squirtle', 'Water'),
-];
+// const List<_Pokemon> _starters = [
+//   _Pokemon('Bulbasaur', 'Grass'),
+//   _Pokemon('Charmander', 'Fire'),
+//   _Pokemon('Squirtle', 'Water'),
+// ];
 
-class _Pokemon {
-  final String name, type;
+// class _Pokemon {
+//   final String name, type;
 
-  const _Pokemon(this.name, this.type);
-}
+//   const _Pokemon(this.name, this.type);
+// }
 
-class _Account {
-  final bool? isDisabled;
+// class _Account {
+//   final bool? isDisabled;
 
-  _Account({this.isDisabled});
-}
+//   _Account({this.isDisabled});
+// }

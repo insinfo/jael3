@@ -2,8 +2,8 @@ part of 'parselet.dart';
 
 const Map<TokenType, InfixParselet> infixParselets = {
   TokenType.lParen: CallParselet(),
-  TokenType.elvisDot: MemberParselet(),
-  TokenType.dot: MemberParselet(),
+  // TokenType.elvisDot: MemberParselet(),
+  // TokenType.dot: MemberParselet(),
   TokenType.lBracket: IndexerParselet(),
   TokenType.asterisk: BinaryParselet(14),
   TokenType.slash: BinaryParselet(14),
@@ -22,33 +22,42 @@ const Map<TokenType, InfixParselet> infixParselets = {
 };
 
 class ConditionalParselet implements InfixParselet {
-  @override
-  int get precedence => 4;
-
   const ConditionalParselet();
 
   @override
-  Expression? parse(Parser parser, Expression left, Token token) {
-    var ifTrue = parser.parseExpression(0);
+  int get precedence => 4; // ok: abaixo de ==/!= (10..), acima de assignment (=) 3
 
+  @override
+  Expression? parse(Parser parser, Expression left, Token token) {
+    // then
+    final ifTrue = parser.parseExpression(precedence - 1);
     if (ifTrue == null) {
-      parser.errors.add(JaelError(JaelErrorSeverity.error,
-          'Missing expression in conditional expression.', token.span));
+      parser.errors.add(JaelError(
+        JaelErrorSeverity.error,
+        'Missing expression after "?" in conditional expression.',
+        token.span,
+      ));
       return null;
     }
 
     if (!parser.next(TokenType.colon)) {
-      parser.errors.add(JaelError(JaelErrorSeverity.error,
-          'Missing ":" in conditional expression.', ifTrue.span));
+      parser.errors.add(JaelError(
+        JaelErrorSeverity.error,
+        'Missing ":" in conditional expression.',
+        ifTrue.span,
+      ));
       return null;
     }
+    final colon = parser.current;
 
-    var colon = parser.current;
-    var ifFalse = parser.parseExpression(0);
-
+    // else
+    final ifFalse = parser.parseExpression(precedence - 1);
     if (ifFalse == null) {
-      parser.errors.add(JaelError(JaelErrorSeverity.error,
-          'Missing expression in conditional expression.', colon.span));
+      parser.errors.add(JaelError(
+        JaelErrorSeverity.error,
+        'Missing expression after ":" in conditional expression.',
+        colon.span,
+      ));
       return null;
     }
 
@@ -146,22 +155,22 @@ class IndexerParselet implements InfixParselet {
   }
 }
 
-class MemberParselet implements InfixParselet {
-  const MemberParselet();
+// class MemberParselet implements InfixParselet {
+//   const MemberParselet();
 
-  @override
-  int get precedence => 19;
+//   @override
+//   int get precedence => 19;
 
-  @override
-  Expression? parse(Parser parser, Expression left, Token token) {
-    var name = parser.parseIdentifier();
+//   @override
+//   Expression? parse(Parser parser, Expression left, Token token) {
+//     var name = parser.parseIdentifier();
 
-    if (name == null) {
-      parser.errors.add(JaelError(JaelErrorSeverity.error,
-          'Expected the name of a property following "."', token.span));
-      return null;
-    }
+//     if (name == null) {
+//       parser.errors.add(JaelError(JaelErrorSeverity.error,
+//           'Expected the name of a property following "."', token.span));
+//       return null;
+//     }
 
-    return MemberExpression(left, token, name);
-  }
-}
+//     return MemberExpression(left, token, name);
+//   }
+// }

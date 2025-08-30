@@ -22,7 +22,6 @@ abstract class Scanner {
 }
 
 final Map<Pattern, TokenType> _expressionPatterns = {
-//final Map<Pattern, TokenType> _htmlPatterns = {
   '{{': TokenType.lDoubleCurly,
   '{{-': TokenType.lDoubleCurly,
   '!DOCTYPE': TokenType.doctype,
@@ -35,20 +34,17 @@ final Map<Pattern, TokenType> _expressionPatterns = {
   _string1: TokenType.string,
   _string2: TokenType.string,
   _id: TokenType.id,
-//};
 
-//final Map<Pattern, TokenType> _expressionPatterns = {
   '}}': TokenType.rDoubleCurly,
-
   // Keywords
   'new': TokenType.$new,
-
   // Misc.
   '*': TokenType.asterisk,
   ':': TokenType.colon,
   ',': TokenType.comma,
   '.': TokenType.dot,
   '??': TokenType.elvis,
+  '?': TokenType.question, // <-- adicionado ESTA LINHA
   '?.': TokenType.elvisDot,
   //'=': TokenType.equals,
   '!': TokenType.exclamation,

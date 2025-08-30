@@ -20,12 +20,9 @@ class Conditional extends Expression {
 
   @override
   dynamic compute(scope) {
-    var v = condition.compute(scope) as bool;
-
-    if (scope?.resolve('!strict!')?.value == false) {
-      v = v == true;
-    }
-
-    return v ? ifTrue.compute(scope) : ifFalse.compute(scope);
+    final raw = condition.compute(scope);
+    final nonStrict = scope?.resolve('!strict!')?.value == false;
+    final cond = nonStrict ? (raw == true) : (raw as bool);
+    return cond ? ifTrue.compute(scope) : ifFalse.compute(scope);
   }
 }

@@ -372,63 +372,114 @@ class Parser {
     }
   }
 
+  // Expression? parseExpression(int precedence) {
+  //   // Only consume a token if it could potentially be a prefix parselet
+  //   for (var type in prefixParselets.keys) {
+  //     if (next(type)) {
+  //       var left = prefixParselets[type]?.parse(this, _current);
+  //       while (precedence < _nextPrecedence()) {
+  //         _current = scanner.tokens[++_index];
+  //         if (_current.type == TokenType.slash &&
+  //             peek()?.type == TokenType.gt) {
+  //           // Handle `/>`
+  //           //
+  //           // Don't register this as an infix expression.
+  //           // Instead, backtrack, and return the current expression.
+  //           _index--;
+  //           return left;
+  //         }
+  //         var infix = infixParselets[_current.type]!;
+  //         Expression? newLeft;
+  //         if (left != null) {
+  //           newLeft = infix.parse(this, left, _current);
+  //         }
+  //         if (newLeft == null) {
+  //           if (_current.type == TokenType.gt) _index--;
+  //           return left;
+  //         }
+  //         left = newLeft;
+  //       }
+  //       return left;
+  //     }
+  //   }
+  //   // Nothing was parsed; return null.
+  //   return null;
+  // }
+
+// Em: lib/src/text/parser.dart
+
   Expression? parseExpression(int precedence) {
-    // Only consume a token if it could potentially be a prefix parselet
-    for (var type in prefixParselets.keys) {
-      if (next(type)) {
-        var left = prefixParselets[type]?.parse(this, _current);
-        while (precedence < _nextPrecedence()) {
-          _current = scanner.tokens[++_index];
-          if (_current.type == TokenType.slash &&
-              peek()?.type == TokenType.gt) {
-            // Handle `/>`
-            //
-            // Don't register this as an infix expression.
-            // Instead, backtrack, and return the current expression.
-            _index--;
-            return left;
-          }
-          var infix = infixParselets[_current.type]!;
-          Expression? newLeft;
-          if (left != null) {
-            newLeft = infix.parse(this, left, _current);
-          }
-          if (newLeft == null) {
-            if (_current.type == TokenType.gt) _index--;
-            return left;
-          }
-          left = newLeft;
-        }
-        return left;
+    Token? prefixToken = peek();
+    if (prefixToken == null) {
+      return null; // Fim inesperado dos tokens
+    }
+
+    PrefixParselet? prefixParselet = prefixParselets[prefixToken.type];
+
+    if (prefixParselet == null) {
+      errors.add(JaelError(
+          JaelErrorSeverity.error,
+          'Unexpected token "${prefixToken.span.text}". Expected an expression.',
+          prefixToken.span));
+      return null;
+    }
+
+    // Consome o token de prefixo e analisa a expressão inicial.
+    next(prefixToken.type);
+    Expression? left = prefixParselet.parse(this, _current);
+
+    if (left == null) {
+      return null; // O parselet de prefixo falhou
+    }
+
+    // Loop para operadores infixo (a essência do Pratt Parser).
+    while (precedence < _nextPrecedence()) {
+      Token infixToken = peek()!;
+
+      InfixParselet? infixParselet = infixParselets[infixToken.type];
+      if (infixParselet == null) {
+        break;
+      }
+
+      next(infixToken.type); // Consome o token infixo
+
+      // **A CORREÇÃO ESTÁ AQUI:**
+      // Adicionamos '!' para garantir ao compilador que 'left' não é nulo neste ponto.
+      // Isso é seguro por causa da checagem 'if (left == null)' acima e abaixo.
+      left = infixParselet.parse(this, left!, _current);
+
+      if (left == null) {
+        // O parselet infixo falhou (ex: `>` sem um lado direito), recue um token e saia.
+        _index--;
+        break;
       }
     }
-    // Nothing was parsed; return null.
-    return null;
+
+    return left;
   }
 
   Identifier? parseIdentifier() =>
       next(TokenType.id) ? Identifier(_current) : null;
 
-  // parseKeyValuePair
   KeyValuePair? parseKeyValuePair() {
-    final key = parseExpression(0);
+    var key = parseExpression(0);
     if (key == null) return null;
 
     if (!next(TokenType.colon)) return KeyValuePair(key, null, null);
 
-    final colon = _current;
-    final Expression? value = parseExpression(0);
+    var colon = _current, value = parseExpression(0) as Token?;
+
     if (value == null) {
       errors.add(JaelError(JaelErrorSeverity.error,
           'Missing expression in key-value pair.', colon.span));
       return null;
     }
-    return KeyValuePair(key, colon, value);
+
+    return KeyValuePair(key, colon, value as Expression);
   }
 
-  // parseNamedArgument
   NamedArgument? parseNamedArgument() {
-    final name = parseIdentifier();
+    var name = parseIdentifier();
     if (name == null) return null;
 
     if (!next(TokenType.colon)) {
@@ -437,13 +488,14 @@ class Parser {
       return null;
     }
 
-    final colon = _current;
-    final Expression? value = parseExpression(0);
+    var colon = _current, value = parseExpression(0) as Token?;
+
     if (value == null) {
       errors.add(JaelError(JaelErrorSeverity.error,
           'Missing expression in named argument.', colon.span));
       return null;
     }
-    return NamedArgument(name, colon, value);
+
+    return NamedArgument(name, colon, value as Expression);
   }
 }

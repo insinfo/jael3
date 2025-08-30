@@ -22,11 +22,9 @@ class Negation extends Expression {
 
   @override
   bool compute(SymbolTable? scope) {
-    var v = expression.compute(scope) as bool;
-    if (scope?.resolve('!strict!')?.value == false) {
-      v = v == true;
-    }
-
+    final raw = expression.compute(scope);
+    final nonStrict = scope?.resolve('!strict!')?.value == false;
+    final v = nonStrict ? (raw == true) : (raw as bool);
     return !v;
   }
 }
