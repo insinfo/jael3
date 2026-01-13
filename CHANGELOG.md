@@ -1,5 +1,13 @@
 # Change Log
 
+## 8.4.1
+
+- Reintroduced member access (`obj.prop`/`obj?.prop`) via `!memberResolver!` without `dart:mirrors`.
+- Allow quoted expressions in `if`, `for-each`, and `switch`/`case` directives.
+- Improve `check_jael` with render fixtures, `--views-dir`, and sample data for validation/login templates.
+- Add comprehensive tests and a complex fixture-based test for `assinatura_validacao.html`.
+
+
 ## 8.4.0
 
 ### Features

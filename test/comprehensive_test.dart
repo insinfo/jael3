@@ -191,6 +191,14 @@ void main() {
       expect(normalize(html), '<p> Produto: Super Gadget </p>');
     });
 
+    test('acessa valores de mapa usando sintaxe de membro', () {
+      var values = {
+        'user': {'name': 'Alice'}
+      };
+      var html = render('<p>Nome: {{ user.name }}</p>', values);
+      expect(normalize(html), '<p> Nome: Alice </p>');
+    });
+
     test('acessa itens de lista usando sintaxe de indexador', () {
       var values = {
         'colors': ['Vermelho', 'Verde', 'Azul']
@@ -207,6 +215,15 @@ void main() {
       expect(normalize(html), '<b> Visível </b>');
 
       html = render('<b if=show_it>Visível</b>', {'show_it': false});
+      expect(html, isEmpty);
+    });
+
+    test('diretiva "if" aceita expressao entre aspas', () {
+      var html =
+          render('<p if="status_code == 200">OK</p>', {'status_code': 200});
+      expect(normalize(html), '<p> OK </p>');
+
+      html = render('<p if="status_code == 200">OK</p>', {'status_code': 404});
       expect(html, isEmpty);
     });
 
@@ -230,6 +247,23 @@ void main() {
       expect(normalized, contains('<li> 1: Banana </li>'));
     });
 
+    test('diretiva "for-each" aceita expressao entre aspas', () {
+      const template = '''
+        <ul>
+          <li for-each="items" as="item">{{ item['name'] }}</li>
+        </ul>
+      ''';
+      var html = render(template, {
+        'items': [
+          {'name': 'A'},
+          {'name': 'B'}
+        ]
+      });
+      var normalized = normalize(html);
+      expect(normalized, contains('<li> A </li>'));
+      expect(normalized, contains('<li> B </li>'));
+    });
+
     test('diretiva "switch" seleciona o "case" correto', () {
       const template = '''
         <div>
@@ -242,6 +276,20 @@ void main() {
       ''';
       var html = render(template, {'status_code': 404});
       expect(normalize(html), '<div> Não Encontrado </div>');
+    });
+
+    test('diretiva "switch" aceita expressao entre aspas', () {
+      const template = '''
+        <div>
+          <switch value="status_code">
+            <case value="200">OK</case>
+            <case value="404">Não Encontrado</case>
+            <default>Erro</default>
+          </switch>
+        </div>
+      ''';
+      var html = render(template, {'status_code': 200});
+      expect(normalize(html), '<div> OK </div>');
     });
 
     test('diretiva "switch" recorre ao "default"', () {
@@ -313,6 +361,22 @@ void main() {
     });
   });
 
+  group('Member resolver', () {
+    test('resolve membro via !memberResolver! sem dart:mirrors', () {
+      const template = '<p>{{ user.name }}</p>';
+      var html = render(template, {
+        'user': _FakeUser('Alice'),
+        '!memberResolver!': (Object? target, String name) {
+          if (target is _FakeUser && name == 'name') {
+            return const jael.MemberResolution.handled('Alice');
+          }
+          return const jael.MemberResolution.unresolved();
+        }
+      });
+      expect(normalize(html), '<p> Alice </p>');
+    });
+  });
+
   group('Pré-processador (Includes & Herança)', () {
     late MemoryFileSystem fs;
 
@@ -367,4 +431,9 @@ void main() {
       expect(normalized, isNot(contains('Conteúdo Padrão.')));
     });
   });
+}
+
+class _FakeUser {
+  final String name;
+  const _FakeUser(this.name);
 }

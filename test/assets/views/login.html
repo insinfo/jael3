@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Autenticação SALI</title>  
+  <include src="partials/styles.html" />
+</head>
+
+<body>
+
+  <main class="card">
+    <header class="brand">
+      <div class="logo">{{- logoSvgString }}</div>
+      <div class="brand-info">
+        <h1 id="titulo-login">Autenticação SALI</h1>
+        <div class="helper">Acesse com usuário interno ou via gov.br</div>
+      </div>
+    </header>
+    <section class="content">
+      
+      <div id="error-dialog" class="error-dialog"></div>
+
+      <form id="login-form" method="POST" action=urlLogin novalidate>
+        <div>
+          <label for="username">Usuário</label>
+          <input id="username" name="username" type="text" class="input" autocomplete="username" required />
+        </div>
+        <div>
+          <label for="password">Senha</label>
+          <div class="input-wrap">
+            <input id="password" name="password" type="password" class="input input-password"
+              autocomplete="current-password" required />
+            <button id="togglePwd" class="icon-btn" type="button" aria-label="Mostrar senha" aria-pressed="false">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 5c5 0 9 3.5 10.5 7-1.5 3.5-5.5 7-10.5 7S3 15.5 1.5 12C3 8.5 7 5 12 5Zm0 3a4 4 0 1 0 .001 8.001A4 4 0 0 0 12 8Zm0 2a2 2 0 1 1-.001 3.999A2 2 0 0 1 12 10Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Entrar</button>
+        <a href="#" id="forgot-password-link" class="forgot-password-link">Esqueci minha senha</a>
+      </form>
+
+      <div class="separator" role="separator" aria-label="ou">ou</div>
+
+      <button id="btnLoginGov" class="govbr-button" type="button" aria-label="Entrar com gov.br">
+        <svg class="user-icon" viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path
+            d="M7 8c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 1.5c-2 0-6 1-6 3v1.5h12V12.5c0-2-4-3-6-3z" />
+        </svg>
+        <span class="button-text">Entrar com <strong>gov.br</strong></span>
+      </button>
+
+      <p class="helper">Ao continuar com gov.br, você será redirecionado para o ambiente oficial de autenticação.</p>
+    </section>
+    <div class="footer">© {{anoAtual}} SALI • Prefeitura de Rio das Ostras</div>
+  </main>
+
+  <!-- Modal para solicitar recuperação -->
+  <div id="forgot-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button id="forgot-modal-close" class="modal-close" aria-label="Fechar modal">&times;</button>
+      <h2>Recuperar Senha</h2>
+      <p>Digite seu nome de usuário. Se houver uma conta associada, enviaremos um código de recuperação para o seu
+        e-mail.</p>
+      <form id="forgot-form">
+        <div>
+          <label for="forgot-username">Usuário</label>
+          <input id="forgot-username" type="text" class="input" required />
+        </div>
+        <br />
+        <button class="btn btn-primary" type="submit">Enviar Código</button>
+        <div id="forgot-message" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para redefinir a senha -->
+  <div id="reset-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button id="reset-modal-close" class="modal-close" aria-label="Fechar modal">&times;</button>
+      <h2>Redefinir Senha</h2>
+      <div id="reset-message-top" class="form-message"></div>
+      <form id="reset-form">
+        <div>
+          <label for="reset-username">Usuário</label>
+          <input id="reset-username" type="text" class="input" required readonly />
+        </div>
+        <br />
+        <div>
+          <label for="reset-code">Código de Recuperação</label>
+          <input id="reset-code" type="text" class="input" required />
+        </div>
+        <br />
+        <div>
+          <label for="reset-password">Nova Senha</label>
+          <input id="reset-password" type="password" class="input" required />
+        </div>
+        <br />
+        <div>
+          <label for="reset-confirm-password">Repetir Nova Senha</label>
+          <input id="reset-confirm-password" type="password" class="input" required />
+        </div>
+        <br />
+        <button class="btn btn-primary" type="submit">Alterar Senha</button>
+        <div id="reset-message" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- O JavaScript é injetado aqui -->
+  <include src="partials/scripts.html" />
+
+</body>
+</html>

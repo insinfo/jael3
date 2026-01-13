@@ -1,5 +1,5 @@
 name: jael3_fork
-version: 8.4.0
+version: 8.4.1
 description:  A simple server-side HTML templating engine for Dart. Comparable to Blade or Liquid.
 homepage: https://github.com/insinfo/jael3
 repository: https://github.com/insinfo/jael3

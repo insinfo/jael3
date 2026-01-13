@@ -2,8 +2,8 @@ part of 'parselet.dart';
 
 const Map<TokenType, InfixParselet> infixParselets = {
   TokenType.lParen: CallParselet(),
-  // TokenType.elvisDot: MemberParselet(),
-  // TokenType.dot: MemberParselet(),
+  TokenType.elvisDot: MemberParselet(),
+  TokenType.dot: MemberParselet(),
   TokenType.lBracket: IndexerParselet(),
   TokenType.asterisk: BinaryParselet(14),
   TokenType.slash: BinaryParselet(14),
@@ -155,22 +155,22 @@ class IndexerParselet implements InfixParselet {
   }
 }
 
-// class MemberParselet implements InfixParselet {
-//   const MemberParselet();
+class MemberParselet implements InfixParselet {
+  const MemberParselet();
 
-//   @override
-//   int get precedence => 19;
+  @override
+  int get precedence => 19;
 
-//   @override
-//   Expression? parse(Parser parser, Expression left, Token token) {
-//     var name = parser.parseIdentifier();
+  @override
+  Expression? parse(Parser parser, Expression left, Token token) {
+    var name = parser.parseIdentifier();
 
-//     if (name == null) {
-//       parser.errors.add(JaelError(JaelErrorSeverity.error,
-//           'Expected the name of a property following "."', token.span));
-//       return null;
-//     }
+    if (name == null) {
+      parser.errors.add(JaelError(JaelErrorSeverity.error,
+          'Expected the name of a property following "."', token.span));
+      return null;
+    }
 
-//     return MemberExpression(left, token, name);
-//   }
-// }
+    return MemberExpression(left, token, name);
+  }
+}

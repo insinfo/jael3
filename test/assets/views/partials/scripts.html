@@ -1,0 +1,368 @@
+<declare>
+    <script>
+        class SimpleLoading {
+            constructor() {
+                this._root = null;
+            }
+            show(target = null) {
+                this._root = document.createElement('div');
+                this._root.style.width = '100%';
+                this._root.style.height = '100%';
+                this._root.style.background = 'rgb(255 255 255 / 48%)';
+                this._root.style.position = 'absolute';
+                this._root.style.left = '0';
+                this._root.style.top = '0';
+                this._root.style.zIndex = '50000';
+                this._root.style.display = 'flex';
+                this._root.style.flexDirection = 'column';
+                this._root.style.alignItems = 'center';
+                this._root.style.justifyContent = 'center';
+                this._root.innerHTML = `                    
+                    <div>
+                    <div class="circular-spinner"></div>
+                    </div>`;
+
+                if (target) {
+                    target.appendChild(this._root);
+                } else {
+                    document.body.appendChild(this._root);
+                }
+            }
+            hide() {
+                if (this._root && this._root.parentNode) {
+                    this._root.parentNode.removeChild(this._root);
+                    this._root = null;
+                }
+            }
+        }
+    </script>
+    <script>
+        // helpers
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        function setBusy(form, busy) {
+            if (!form) return;
+            form.setAttribute('aria-busy', String(busy));
+            form.querySelectorAll('input, select, textarea')
+                .forEach(el => { el.disabled = !!busy; });
+        }
+
+        class LoginViewModel {
+            constructor() {
+                this.urls = {
+                    forgot: '{{- urlPasswordForgot }}',
+                    reset: '{{- urlPasswordReset }}',
+                    loginGov: '{{- urlGovBr }}'
+                };
+
+                this.dom = {
+                    togglePwdBtn: document.getElementById('togglePwd'),
+                    loginGovBtn: document.getElementById('btnLoginGov'),
+                    forgotPasswordLink: document.getElementById('forgot-password-link'),
+                    passwordInput: document.getElementById('password'),
+                    forgotForm: document.getElementById('forgot-form'),
+                    resetForm: document.getElementById('reset-form'),
+                    forgotModal: document.getElementById('forgot-modal'),
+                    resetModal: document.getElementById('reset-modal'),
+                    forgotModalCloseBtn: document.getElementById('forgot-modal-close'),
+                    resetModalCloseBtn: document.getElementById('reset-modal-close'),
+                    errorDialog: document.getElementById('error-dialog'),
+                    forgotMessage: document.getElementById('forgot-message'),
+                    resetMessage: document.getElementById('reset-message')
+                };
+
+                this.loading = new SimpleLoading();
+
+                // cooldown "Enviar Código"
+                this.COOLDOWN_SECONDS = 30;
+                this.FORGOT_COOLDOWN_KEY = 'sali_forgot_cooldown_until';
+                this._cooldownTimer = null;
+
+                // elemento de sucesso após reset
+                this.resetSuccessEl = null;
+
+                this.init();
+            }
+
+            init() {
+                this.handleUrlErrors();
+                this.initEventListeners();
+            }
+
+            initEventListeners() {
+                this.dom.togglePwdBtn?.addEventListener('click', () => this.togglePasswordVisibility());
+                this.dom.loginGovBtn?.addEventListener('click', () => this.redirectToGovBr());
+
+                this.dom.forgotPasswordLink?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal('forgot-modal');
+                    this.resumeForgotCooldown();
+                });
+
+                this.dom.forgotModalCloseBtn?.addEventListener('click', () => this.closeModal('forgot-modal'));
+                this.dom.resetModalCloseBtn?.addEventListener('click', () => this.closeModal('reset-modal'));
+                this.dom.forgotForm?.addEventListener('submit', (e) => this.handleForgotSubmit(e));
+                this.dom.resetForm?.addEventListener('submit', (e) => this.handleResetSubmit(e));
+            }
+
+            handleUrlErrors() {
+                const params = new URLSearchParams(window.location.search);
+                const err = params.get('error');
+                const code = params.get('error_code'); // << NOVO
+                let msg = null;
+                if (err === 'credenciais_invalidas') {
+                    msg = 'Usuário ou senha inválida.';
+                }
+                switch (code) {
+                    case 'USER_WITHOUT_CPF':
+                        msg = 'Usuário não é pessoa física ou não possui CPF associado.';
+                        break;
+                    case 'BAD_CREDENTIALS':
+                        msg = 'Usuário ou senha inválida.';
+                        break;
+                }
+
+                if (msg) {
+                    this.dom.errorDialog.textContent = msg;
+                    this.dom.errorDialog.style.display = 'block';
+                }
+            }
+
+            togglePasswordVisibility() {
+                const input = this.dom.passwordInput;
+                const button = this.dom.togglePwdBtn;
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                button.setAttribute('aria-pressed', String(isPassword));
+                button.setAttribute('aria-label', isPassword ? 'Ocultar senha' : 'Mostrar senha');
+            }
+
+            redirectToGovBr() {
+                window.location.href = this.urls.loginGov;
+            }
+
+            // ---------- COOLDOWN "Enviar Código" ----------
+            get forgotSubmitBtn() {
+                return this.dom.forgotForm?.querySelector('button[type="submit"]');
+            }
+            startForgotCooldown(seconds = this.COOLDOWN_SECONDS) {
+                localStorage.setItem(this.FORGOT_COOLDOWN_KEY, String(Date.now() + seconds * 1000));
+                this.applyForgotCooldownState();
+            }
+            resumeForgotCooldown() { this.applyForgotCooldownState(); }
+            applyForgotCooldownState() {
+                const btn = this.forgotSubmitBtn;
+                if (!btn) return;
+                const until = parseInt(localStorage.getItem(this.FORGOT_COOLDOWN_KEY) || '0', 10);
+                const now = Date.now();
+                if (until && until > now) {
+                    const remaining = Math.ceil((until - now) / 1000);
+                    btn.disabled = true;
+                    btn.textContent = `Reenviar em ${remaining}s`;
+                    if (!this._cooldownTimer) {
+                        this._cooldownTimer = setInterval(() => this.applyForgotCooldownState(), 1000);
+                    }
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Enviar Código';
+                    if (this._cooldownTimer) { clearInterval(this._cooldownTimer); this._cooldownTimer = null; }
+                    localStorage.removeItem(this.FORGOT_COOLDOWN_KEY);
+                }
+            }
+
+            // ---------- ESQUECI MINHA SENHA ----------
+            async handleForgotSubmit(event) {
+                event.preventDefault();
+                const form = event.target;
+                if (form.dataset.busy === 'true') return;
+                form.dataset.busy = 'true';
+
+                const usernameInput = form.querySelector('#forgot-username');
+                if (!usernameInput.value.trim()) {
+                    this.setMessage('forgot-message', 'Por favor, informe o nome de usuário.', true);
+                    form.dataset.busy = 'false';
+                    return;
+                }
+
+                setBusy(form, true);
+                this.setMessage('forgot-message', 'Enviando...', false);
+                this.loading.show();
+
+                this.startForgotCooldown();
+
+                try {
+                    const res = await fetch(this.urls.forgot, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: usernameInput.value })
+                    });
+                    const data = await res.json();
+
+                    if (data.status === 'throttled') {
+                        const secs = Math.min(Math.max(1, Number(data.retry_after || 30)), 3600);
+                        this.setMessage('forgot-message', `Aguarde ${secs}s para reenviar.`, false);
+                        this.startForgotCooldown(secs);
+                        return;
+                    }
+
+                    if (data.status === 'user_not_found') {
+                        this.setMessage('forgot-message', 'Usuário não encontrado.', true);
+                        return;
+                    }
+
+                    if (data.status === 'no_email') {
+                        this.setMessage('forgot-message', 'Este usuário não possui e-mail válido cadastrado.', true);
+                        return;
+                    }
+
+                    if (data.status === 'ok_sent') {
+                        // mostra e-mail mascarado
+                        const msg = `Enviamos um código para ${data.maskedEmail}. Verifique sua caixa de entrada e o spam.`;
+                        this.setMessage('reset-message-top', msg, false); 
+                        this.closeModal('forgot-modal');
+                        document.getElementById('reset-username').value = usernameInput.value;
+                        this.showModal('reset-modal');
+                        this.dom.resetForm?.querySelector('#reset-code')?.focus();
+                        return;
+                    }
+
+                    // fallback
+                    this.setMessage('forgot-message', data.message || 'Falha ao enviar código.', true);
+                } catch (err) {
+                    console.error('Forgot error:', err);
+                    this.setMessage('forgot-message', 'Ocorreu um erro de rede.', true);
+                } finally {
+                    this.loading.hide();
+                    setBusy(form, false);
+                    this.applyForgotCooldownState();
+                    form.dataset.busy = 'false';
+                }
+            }
+
+            // --------- REDEFINIR SENHA (remove inputs e mostra só mensagem) ----------
+            async handleResetSubmit(event) {
+                event.preventDefault();
+                const form = event.target;
+                if (form.dataset.busy === 'true') return;
+                form.dataset.busy = 'true';
+
+                const submitButton = form.querySelector('button[type="submit"]');
+                const username = form.querySelector('#reset-username').value;
+                const token = form.querySelector('#reset-code').value;
+                const newPassword = form.querySelector('#reset-password').value;
+                const confirmPassword = form.querySelector('#reset-confirm-password').value;
+
+                if (newPassword !== confirmPassword) {
+                    this.setMessage('reset-message', 'As senhas não coincidem.', true);
+                    form.dataset.busy = 'false';
+                    return;
+                }
+                if (!token || !newPassword) {
+                    this.setMessage('reset-message', 'Todos os campos são obrigatórios.', true);
+                    form.dataset.busy = 'false';
+                    return;
+                }
+
+                setBusy(form, true);
+                submitButton.disabled = true;
+                this.setMessage('reset-message', 'Verificando...', false);
+                const modalContent = this.dom.resetModal?.querySelector('.modal-content') || form;
+                this.loading.show(modalContent);
+
+                let ok = false;
+                try {
+                    const res = await fetch(this.urls.reset, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, token, newPassword })
+                    });
+                    const data = await res.json();
+
+                    if (data.is_error) {
+                        this.setMessage('reset-message', data.message || 'Não foi possível alterar a senha.', true);
+                        await sleep(1400);
+                    } else {
+                        ok = true;
+                        this.loading.hide();                         // deixa ver a próxima tela
+                        this.showResetSuccess(3);                    // troca formulário por mensagem
+                        await this.redirectWithCountdown(3);         // atualiza o contador
+                    }
+                } catch (err) {
+                    console.error('Reset error:', err);
+                    this.setMessage('reset-message', 'Ocorreu um erro de rede.', true);
+                    await sleep(1200);
+                } finally {
+                    if (!ok) {
+                        this.loading.hide();
+                        setBusy(form, false);
+                        submitButton.disabled = false;
+                        form.dataset.busy = 'false';
+                    }
+                }
+            }
+
+            // Substitui o <form id="reset-form"> por uma view de sucesso com contador
+            showResetSuccess(seconds = 3) {
+                const modal = this.dom.resetModal?.querySelector('.modal-content');
+                const form = this.dom.resetForm;
+                if (!modal || !form) return;
+
+                const success = document.createElement('div');
+                success.id = 'reset-success';
+                success.className = 'success-state';
+                success.setAttribute('role', 'status');
+                success.setAttribute('tabindex', '-1');
+                success.innerHTML = `        
+        <div class="success-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9 16.2 5.5 12.7 4.1 14.1 9 19 20.3 7.7 18.9 6.3z"/></svg>
+        </div>
+        <div class="success-title">Senha atualizada com sucesso!</div>
+        <div class="success-desc">Redirecionando para o login em <b id="redir-count">${seconds}</b>s…</div>
+      `;
+                form.replaceWith(success);
+                this.resetSuccessEl = success;
+                success.focus({ preventScroll: true });
+            }
+
+            async redirectWithCountdown(seconds = 3) {
+                for (let i = seconds; i > 0; i--) {
+                    if (this.resetSuccessEl) {
+                        const b = this.resetSuccessEl.querySelector('#redir-count');
+                        if (b) b.textContent = String(i);
+                    } else {
+                        this.setMessage('reset-message', `✅ Senha atualizada com sucesso! Redirecionando para o login em ${i}s...`, false);
+                    }
+                    await sleep(1000);
+                }
+                window.location.href = window.location.pathname;
+            }
+
+            // ------- modais & mensagens -------
+            showModal(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.display = 'grid';
+                document.body.style.overflow = 'hidden';
+                const firstInput = el.querySelector('input:not([readonly]), button, select, textarea');
+                firstInput?.focus();
+                if (id === 'forgot-modal') this.resumeForgotCooldown();
+            }
+            closeModal(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+            setMessage(id, text, isError) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.textContent = text;
+                el.style.color = isError ? '#991b1b' : 'var(--muted)';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => new LoginViewModel());
+    </script>
+
+
+
+</declare>

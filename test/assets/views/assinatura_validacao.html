@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VALIDAR</title>
+  <include src="partials/styles.html" />
+  <style>
+    :root {
+      --gov-blue: #1351b4;
+      --gov-hover: #0c326f;
+      --text-color: #333;
+    }
+    
+    body {
+      background-color: #f8f9fa;
+      color: var(--text-color);
+      font-family: 'Rawline', 'Raleway', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: block; 
+    }
+
+    .gov-header {
+      background: #fff;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #ddd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-bottom: 2rem;
+    }
+    
+    .brand {
+      font-weight: 800;
+      font-size: 1.5rem;
+      color: var(--gov-blue);
+      letter-spacing: -0.5px;
+    }
+    
+    .sub-brand {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.2rem;
+    }
+
+    .gov-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    .alert-error {
+       background: #f8d7da;
+       color: #721c24;
+       padding: 0.75rem 1.25rem;
+       border: 1px solid #f5c6cb;
+       border-radius: 4px;
+       margin-bottom: 1.5rem;
+       display: flex;
+       align-items: center;
+    }
+
+    .page-title {
+      margin-bottom: 2rem;
+    }
+    .page-title h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: #111;
+      font-weight: 300;
+    }
+    .page-title p {
+      color: #555;
+      line-height: 1.5;
+      max-width: 700px;
+    }
+    
+    .gov-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+      margin-bottom: 2rem;
+      border: 1px solid #e9ecef;
+    }
+
+    .file-drop-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 3rem 2rem;
+      text-align: center;
+      background: #fafafa;
+      transition: all 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+    .file-drop-area:hover {
+      background: #f1f3f5;
+      border-color: #999;
+    }
+    .file-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .form-footer {
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn-primary {
+      background: var(--gov-blue);
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 1rem;
+    }
+    .btn-primary:hover {
+      background: var(--gov-hover);
+    }
+    
+    .btn-outline {
+      display: inline-block;
+      padding: 0.6rem 1.25rem;
+      border: 1px solid var(--gov-blue);
+      color: var(--gov-blue);
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-outline:hover {
+      background: var(--gov-blue);
+      color: #fff;
+    }
+
+    .captcha-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      padding: 4px 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    .captcha-badge {
+      background: #eee;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      color: #495057;
+    }
+    .captcha-input {
+      width: 80px;
+      padding: 0.3rem;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .result-status {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+    }
+    .status-badge.ok { background: #d4edda; color: #155724; }
+    .status-badge.bad { background: #f8d7da; color: #721c24; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    .result-item h4 {
+      margin: 0 0 0.5rem 0;
+      color: #666;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .result-item .value {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .tech-log {
+      background: #333;
+      color: #0f0;
+      padding: 1rem;
+      border-radius: 4px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+
+    .text-success { color: #28a745; }
+    .text-error { color: #dc3545; }
+
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding: 1rem;
+      color: #6c757d;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="gov-header">
+    <div class="brand">VALIDAR</div>
+    <div class="sub-brand">Serviço de validação de assinaturas eletrônicas</div>
+  </header>
+
+  <div class="gov-container">
+
+    <div class="alert-error" if="erro != null">
+      <span style="font-weight:700; margin-right:0.5rem;">Ops!</span>
+      <span>{{erro}}</span>
+    </div>
+
+    <div>
+            <div class="page-title">
+              <h1>Validação de documentos</h1>
+              <p>
+                Submeta agora mesmo seu documento para verificar a integridade e validade das assinaturas.
+                Seu documento é enviado apenas para análise e não é armazenado.
+              </p>
+            </div>
+
+            <div class="gov-card">
+              <form method="post" enctype="multipart/form-data">
+
+                <div class="file-drop-area">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" style="margin-bottom:1rem;">
+                    <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round"></path>
+                  </svg>
+                  <div id="fileLabel" style="font-weight:600; font-size:1.1rem; color:#444;">
+                    Arraste seu PDF aqui ou clique para selecionar
+                  </div>
+                  <div id="fileName" style="color:var(--gov-blue); font-weight:700; margin-top:0.5rem;"></div>
+                  <input type="file" name="file" accept="application/pdf" class="file-input" required onchange="handleFile(this)" />
+                </div>
+
+                <div class="form-footer">
+                  <div class="captcha-wrapper">
+                    <span style="font-size:0.9rem; color:#666;">Resolva:</span>
+                    <div class="captcha-badge">{{captchaQuestion}}</div>
+                    <input type="number" name="captcha_answer" placeholder="?" required class="captcha-input" />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:16px;">
+                    <label style="font-size:0.85rem; color:#666; display:flex; align-items:center; gap:6px;">
+                      <input type="checkbox" required checked />
+                      Concordo com os termos
+                    </label>
+                    <button class="btn-primary" type="submit">Validar Documento</button>
+                  </div>
+                </div>
+
+              </form>
+            </div>
+    </div>
+
+    <!-- Bloco de Resultado - Mostra apenas se tiver sido feita uma validação -->
+    <div if="validacaoCriptoOk != null">
+            <div class="page-title">
+              <h1>Relatório de Conformidade</h1>
+              <p>Detalhes da validação das assinaturas encontradas no documento.</p>
+            </div>
+
+            <div class="gov-card">
+              <div class="result-status">
+                <div style="flex:1;">
+                  <h2 style="margin:0 0 0.5rem 0;">Resultado da Análise</h2>
+                  <div class="status-badge ok" style="display:inline-block;" if="validacaoCriptoOk == true">
+                    DOCUMENTO VÁLIDO
+                  </div>
+                  <div class="status-badge bad" style="display:inline-block;" if="validacaoCriptoOk == false">
+                    DOCUMENTO INVÁLIDO
+                  </div>
+                </div>
+              </div>
+
+              <div class="result-grid">
+                <div class="result-item">
+                  <h4>Total de Assinaturas</h4>
+                  <div class="value">{{totalAssinaturasPdf}}</div>
+                </div>
+                <div class="result-item">
+                  <h4>Assinaturas Válidas</h4>
+                  <div class="value text-success">{{assinaturasValidas}}</div>
+                </div>
+                <div class="result-item" style="grid-column: 1 / -1;">
+                  <h4>Hash SHA-256</h4>
+                  <div class="value" style="font-family:monospace; font-size:0.9rem; word-break:break-all;">{{hashUpload}}</div>
+                </div>
+              </div>
+
+              <div style="margin-top:2.5rem;">
+                <h3 style="font-size:1.1rem; color:#333; border-bottom:1px solid #eee; padding-bottom:0.5rem; margin-bottom:1rem;">
+                  Assinaturas encontradas
+                </h3>
+
+                <div if="assinaturasVazias == true" style="color:#666;">
+                  Nenhuma assinatura encontrada no documento.
+                </div>
+
+                <div if="temAssinaturas == true">
+                  <div for-each="assinaturas" as="sig">
+                    <div style="border:1px solid #eee; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                      <div style="font-weight:700; margin-bottom:0.75rem;">Assinatura #{{ sig.numero }}</div>
+                      <div class="result-grid" style="margin-top:0;">
+                        <div class="result-item">
+                          <h4>Assinado por</h4>
+                          <div class="value">{{ sig.nome }}</div>
+                        </div>
+                        <div class="result-item">
+                          <h4>CPF</h4>
+                          <div class="value">{{ sig.cpf }}</div>
+                        </div>
+                        <div class="result-item">
+                          <h4>Nº de série</h4>
+                          <div class="value" style="font-family:monospace; font-size:0.95rem; word-break:break-all;">{{ sig.serial }}</div>
+                        </div>
+                        <div class="result-item">
+                          <h4>Data da assinatura</h4>
+                          <div class="value">{{ sig.data }}</div>
+                        </div>
+                        <div class="result-item" style="grid-column: 1 / -1;">
+                          <h4>Política</h4>
+                          <div class="value" style="font-family:monospace; font-size:0.95rem; word-break:break-word;">{{ sig.politica }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top:2rem; text-align:center;">
+                <a href="/assinaturas/validar" class="btn-outline">Nova Validação</a>
+              </div>
+            </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    SALI • Prefeitura de Rio das Ostras
+    Desenvolvido com tecnologia de ponta para segurança digital
+  </div>
+
+  <script>
+    function handleFile(input) {
+      const fileLabel = document.getElementById('fileLabel');
+      const fileName = document.getElementById('fileName');
+      
+      if (input.files && input.files.length > 0) {
+        fileLabel.style.display = 'none';
+        fileName.innerText = input.files[0].name;
+        // Make the drop area look 'active' or 'filled'
+        input.parentElement.style.background = '#eef7ff';
+        input.parentElement.style.borderColor = '#1351b4';
+      } else {
+        fileLabel.style.display = 'block';
+        fileName.innerText = '';
+        input.parentElement.style.background = '#fafafa';
+        input.parentElement.style.borderColor = '#ccc';
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -208,7 +208,12 @@ class Renderer {
     }
 
     var i = 0;
-    for (var item in attribute.value!.compute(scope)) {
+    var iterable = _computeDirectiveValue(attribute, scope);
+    if (iterable is! Iterable) {
+      throw JaelError(JaelErrorSeverity.error,
+          'Expected iterable in "for-each" attribute.', attribute.span);
+    }
+    for (var item in iterable) {
       var childScope = scope.createChild(values: {alias: item, indexAs: i++});
       renderElement(strippedElement, buffer, childScope, html5);
     }
@@ -218,7 +223,7 @@ class Renderer {
       Element element, CodeBuffer buffer, SymbolTable scope, bool html5) {
     var attribute = element.attributes.singleWhere((a) => a.name == 'if');
 
-    var vv = attribute.value!.compute(scope);
+    var vv = _computeDirectiveValue(attribute, scope);
 
     if (scope.resolve('!strict!')?.value == false) {
       vv = vv == true;
@@ -266,20 +271,19 @@ class Renderer {
 
   void renderSwitch(
       Element element, CodeBuffer buffer, SymbolTable scope, bool html5) {
-    var value = element.attributes
-        .firstWhereOrNull((a) => a.name == 'value')
-        ?.value
-        ?.compute(scope);
+    var valueAttr =
+        element.attributes.firstWhereOrNull((a) => a.name == 'value');
+    var value = valueAttr == null ? null : _computeDirectiveValue(valueAttr, scope);
 
     var cases = element.children
         .whereType<Element>()
         .where((c) => c.tagName.name == 'case');
 
     for (var child in cases) {
-      var comparison = child.attributes
-          .firstWhereOrNull((a) => a.name == 'value')
-          ?.value
-          ?.compute(scope);
+      var comparisonAttr =
+          child.attributes.firstWhereOrNull((a) => a.name == 'value');
+      var comparison =
+          comparisonAttr == null ? null : _computeDirectiveValue(comparisonAttr, scope);
       if (comparison == value) {
         for (var i = 0; i < child.children.length; i++) {
           var c = child.children.elementAt(i);
@@ -395,4 +399,27 @@ class Renderer {
       renderElement(syntheticElement, buffer, scope, html5);
     }
   }
+}
+
+dynamic _computeDirectiveValue(Attribute attribute, SymbolTable scope) {
+  var expr = attribute.value;
+  if (expr is StringLiteral) {
+    var parsed = _parseExpressionFromString(expr.value);
+    if (parsed != null) return parsed.compute(scope);
+    throw JaelError(
+      JaelErrorSeverity.error,
+      'Invalid expression in "${attribute.name}" attribute.',
+      expr.span,
+    );
+  }
+  return expr?.compute(scope);
+}
+
+Expression? _parseExpressionFromString(String text) {
+  var scanner = scan(text, asDSX: true);
+  if (scanner.errors.isNotEmpty) return null;
+  var parser = Parser(scanner, asDSX: true);
+  var expr = parser.parseExpression(0);
+  if (parser.errors.isNotEmpty) return null;
+  return expr;
 }
